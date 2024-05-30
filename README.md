@@ -14,4 +14,4 @@ Tiamat is a LLM-based conversational agent for Python's [IDLE](https://docs.pyth
 - aiohttp
 
 ## Screenshots
-![idle_panel](https://github.com/mcauley-penney/Tiamat/assets/59481467/a1e46cfd-ba55-4846-939a-68ad178d1b62)
+![idle-panel](https://github.com/mcauley-penney/Tiamat/assets/59481467/a1e46cfd-ba55-4846-939a-68ad178d1b62)
