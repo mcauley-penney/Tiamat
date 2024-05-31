@@ -27,19 +27,21 @@ See
 
 ## DocGPT
 ### Setup
-- install dependencies using Poetry
-- build database using `sudo docker-compose up`
-  - if you receive an error related to `veth`, restart your machine
-  - after running this, the docker container should be setup but also running. Leave it running
+1. install dependencies using Poetry
+1. build database using `sudo docker-compose up`
+- if you receive an error related to `veth`, restart your machine
+- after running this, the docker container should be setup but also running. Leave it running
 
-- put your tokens in `.env.example` and move the file to `.env`
-  - OPENAI tokens are from Nich
+1. put your OpenAI tokens in `.env.example` and move the file to `.env`
 
-- run `fetch_documents()` only on the first run to populate the database
-  - You need to set up SSH keys in GitHub to actually fetch documents
-    - Create SSH keys on your maching, give key to GitHub in settings
+1. set up SSH keys on your machine and give the public key to GitHub, in `settings` -> `SSH and GPG keys`
 
-- then, uncomment only `run_api()` in main.py, so that the API gets up and running for clients
+1. On the first run of DocGPT, uncomment `fetch_documents()` in main.py and execute
+
+1. After the first run is done and the documents have been fetched, enter main.py, comment out `fetch_documents()`, uncomment `run_api()`, and execute
+
+#### Gotchas
+1. If you are having trouble installing dependencies, you may be using a different version of Python. Ensure you are using Python 3.11.x. If not, install it, create a virtual env through Poetry which uses it, and install the dependencies as normal.
 
 ### API
-- With the server running, see docs at http://127.0.0.1:8000/docs
+- With the server running, see DocGPT's docs at http://127.0.0.1:8000/docs
