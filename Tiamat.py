@@ -20,6 +20,7 @@ import tkinter as tk
 
 
 ENDPOINT = "http://127.0.0.1:8000/v1/assistant/prompt"
+SYSTEM_PROMPT = ""
 
 
 async def async_post(url, payload, headers):
@@ -110,6 +111,30 @@ class Tiamat:
 
         response = await post_task
 
+        answer: str = response["answer"]
+        # check the response (optional)
+        if answer is not None:
+            print("Success:", answer)
+            return answer
+        else:
+            print("An error occurred:", None)
+            return None
+    
+    # Function to send the system message to guardrail the responses
+    async def system_query(self, msg):
+        # set up the message structure
+        payload = {"message": msg, "session_id": "IDLE"}
+        headers = {"Content-Type": "application/json"}
+
+        post_task = asyncio.create_task(async_post(ENDPOINT, payload, headers))
+        
+        # append the system message to the message history
+        self.history.append(("System", msg))
+        
+        response = await post_task
+        
+        # may need to remove? Don't know exactly if we are expecting a response
+        # for the system message,
         answer: str = response["answer"]
         # check the response (optional)
         if answer is not None:
