@@ -120,6 +120,7 @@ class Tiamat:
             print("An error occurred:", None)
             return None
     
+    # This Function is not yet finished, and is not yet used
     # Function to send the system message to guardrail the responses
     async def system_query(self, msg):
         # set up the message structure
