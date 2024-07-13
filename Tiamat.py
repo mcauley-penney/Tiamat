@@ -3,6 +3,7 @@
 import asyncio
 import threading
 import tkinter as tk
+from tkinter import ttk
 import aiohttp
 
 
@@ -20,9 +21,10 @@ async def async_post(url, payload, headers):
 class Tiamat:
     """TODO."""
 
-    def __init__(self, editwin):
+    def __init__(self, editwin, run_in_idle=True):
         self.editwin = editwin
         self.history = []
+        self.run_in_idle = run_in_idle
 
         self.async_loop = asyncio.new_event_loop()
 
@@ -38,7 +40,12 @@ class Tiamat:
 
     def init_widgets(self):
         """TODO."""
-        panel = tk.Frame(self.editwin.top, bg="white")
+        if self.run_in_idle:
+            parent = self.editwin.top
+        else:
+            parent = self.editwin
+
+        panel = tk.Frame(parent, bg="white")
         panel.pack(side="left", fill="y", expand=False, padx=(0, 0), pady=(0, 0))
 
         self.feed_box = tk.Frame(panel, borderwidth=2, relief="sunken")
@@ -75,6 +82,9 @@ class Tiamat:
             font=("Arial", 30, "bold"),
         )
         submit_btn.pack(side="right", padx=0, pady=1)
+
+        if not self.run_in_idle:
+            panel.mainloop()
 
     def handle_user_input(self, event=None):
         """TODO."""
@@ -124,3 +134,9 @@ class Tiamat:
 
         self.msgfeed.config(state="disabled")
         self.msgfeed.see(tk.END)
+
+if __name__ == "__main__":
+    window = tk.Tk()
+    window.title("Tiamat")
+
+    Tiamat(window, run_in_idle=False)
