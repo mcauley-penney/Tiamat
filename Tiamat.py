@@ -29,6 +29,7 @@ class Tiamat:
         self.async_loop = asyncio.new_event_loop()
 
         thread = threading.Thread(target=self.start_loop, args=(self.async_loop,))
+        thread.daemon = True
         thread.start()
 
         self.init_widgets()
