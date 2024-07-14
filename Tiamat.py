@@ -9,7 +9,6 @@ import aiohttp
 
 ENDPOINT = "http://127.0.0.1:8000/v1/assistant/prompt"
 
-
 async def async_post(url, payload, headers):
     """Asynchronously send a POST request to the specified URL with the given payload."""
     async with aiohttp.ClientSession() as session:
@@ -39,32 +38,38 @@ class Tiamat:
 
     def init_widgets(self):
         """TODO."""
+
+        # style = ttk.Style()
+        # style.configure("TFrame", background="#fff")
+
         panel = ttk.Frame(self.editwin.top, style="TFrame")
         panel.pack(side="left", fill="y", expand=False, padx=(0, 0), pady=(0, 0))
 
         self.top_bar = ttk.Frame(panel, style="TFrame")
         self.top_bar.pack(side="top", fill="x", padx=5, pady=5)
 
-        self.title = ttk.Label(self.top_bar, style="TLabel", text="Tiamat", justify=tk.LEFT)
+        self.title = ttk.Label(self.top_bar, style="TLabel", text="Tiamat", justify=tk.LEFT, font="Arial")
         self.title.pack(side="left", fill="x")
 
         self.feed_box = ttk.Frame(panel, style="TFrame")
         self.feed_box.pack(side="bottom", fill="x", padx=5, pady=5)
 
-        self.msgfeed = tk.Text(
-            panel,
-            state="disabled",
-            width=50
-        )
-        self.msgfeed.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        self.msg_canvas = tk.Canvas(panel)
+        self.msg_canvas.pack(side="left", fill="both", expand=True)
 
-        self.scrollbar = ttk.Scrollbar(panel, orient="vertical", command=self.msgfeed.yview)
-        self.scrollbar.pack(side="right", fill="y")
-        
-        self.msgfeed.config(yscrollcommand=self.scrollbar.set)
+        self.msg_scrollbar = ttk.Scrollbar(panel, orient="vertical", command=self.msg_canvas.yview)
+        self.msg_scrollbar.pack(side="right", fill="y")
+
+        self.msg_canvas.configure(yscrollcommand=self.msg_scrollbar.set)
+
+        self.messages_frame = ttk.Frame(self.msg_canvas)
+        self.msg_canvas.create_window((0, 0), window=self.messages_frame, anchor="nw")
+
+
+        self.msg_canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
 
         self.input_box = tk.Text(
-            self.feed_box, height=2, width=50, borderwidth=0, highlightthickness=0
+            self.feed_box, height=2, width=50, borderwidth=0, highlightthickness=0, wrap="word", font="Arial"
         )
         self.input_box.pack(side="left", fill="both", expand=True, padx=0, pady=1)
         self.input_box.bind("<Return>", self.handle_user_input)
@@ -75,6 +80,9 @@ class Tiamat:
             text="Send"
         )
         submit_btn.pack(side="right", padx=0, pady=1)
+
+    def _on_mouse_wheel(self, event):
+        self.msg_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
     def handle_user_input(self, event=None):
         """TODO."""
@@ -119,8 +127,9 @@ class Tiamat:
         msg = f"{speaker}\n{msg}\n\n"
         print(msg)
 
-        self.msgfeed.config(state="normal")
-        self.msgfeed.insert(tk.END, msg)
+        label = ttk.Label(self.messages_frame, text=msg, width=50, wraplength=200, background="lightgray", padding=5, font="Arial")
+        label.pack(side="top", fill="none", pady=5)
 
-        self.msgfeed.config(state="disabled")
-        self.msgfeed.see(tk.END)
+        self.messages_frame.update_idletasks()
+        self.msg_canvas.config(scrollregion=self.msg_canvas.bbox("all"))
+        self.msg_canvas.yview_moveto(1)
