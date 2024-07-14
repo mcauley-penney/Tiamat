@@ -42,12 +42,19 @@ class Tiamat:
         panel = ttk.Frame(self.editwin.top, style="TFrame")
         panel.pack(side="left", fill="y", expand=False, padx=(0, 0), pady=(0, 0))
 
+        self.top_bar = ttk.Frame(panel, style="TFrame")
+        self.top_bar.pack(side="top", fill="x", padx=5, pady=5)
+
+        self.title = ttk.Label(self.top_bar, style="TLabel", text="Tiamat", justify=tk.LEFT)
+        self.title.pack(side="left", fill="x")
+
         self.feed_box = ttk.Frame(panel, style="TFrame")
         self.feed_box.pack(side="bottom", fill="x", padx=5, pady=5)
 
         self.msgfeed = tk.Text(
             panel,
-            state="disabled"
+            state="disabled",
+            width=50
         )
         self.msgfeed.pack(side="left", fill="both", expand=True, padx=5, pady=5)
 
