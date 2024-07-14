@@ -21,15 +21,13 @@ async def async_post(url, payload, headers):
 class Tiamat:
     """TODO."""
 
-    def __init__(self, editwin, run_in_idle=True):
+    def __init__(self, editwin):
         self.editwin = editwin
         self.history = []
-        self.run_in_idle = run_in_idle
 
         self.async_loop = asyncio.new_event_loop()
 
         thread = threading.Thread(target=self.start_loop, args=(self.async_loop,))
-        thread.daemon = True
         thread.start()
 
         self.init_widgets()
@@ -41,26 +39,22 @@ class Tiamat:
 
     def init_widgets(self):
         """TODO."""
-        if self.run_in_idle:
-            parent = self.editwin.top
-        else:
-            parent = self.editwin
-
-        panel = tk.Frame(parent, bg="white")
+        panel = ttk.Frame(self.editwin.top, style="TFrame")
         panel.pack(side="left", fill="y", expand=False, padx=(0, 0), pady=(0, 0))
 
-        self.feed_box = tk.Frame(panel, borderwidth=2, relief="sunken")
+        self.feed_box = ttk.Frame(panel, style="TFrame")
         self.feed_box.pack(side="bottom", fill="x", padx=5, pady=5)
 
         self.msgfeed = tk.Text(
             panel,
-            state="disabled",
-            height=20,
-            width=50,
-            borderwidth=2,
-            relief="sunken",
+            state="disabled"
         )
-        self.msgfeed.pack(side="top", fill="both", expand=True, padx=5, pady=5)
+        self.msgfeed.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+
+        self.scrollbar = ttk.Scrollbar(panel, orient="vertical", command=self.msgfeed.yview)
+        self.scrollbar.pack(side="right", fill="y")
+        
+        self.msgfeed.config(yscrollcommand=self.scrollbar.set)
 
         self.input_box = tk.Text(
             self.feed_box, height=2, width=50, borderwidth=0, highlightthickness=0
@@ -68,24 +62,12 @@ class Tiamat:
         self.input_box.pack(side="left", fill="both", expand=True, padx=0, pady=1)
         self.input_box.bind("<Return>", self.handle_user_input)
 
-        submit_btn = tk.Button(
+        submit_btn = ttk.Button(
             self.feed_box,
             command=self.handle_user_input,
-            text="",
-            background="white",
-            height=2,
-            width=1,
-            foreground="gray",
-            highlightcolor="white",
-            highlightbackground="white",
-            cursor="hand2",
-            relief=tk.FLAT,
-            font=("Arial", 30, "bold"),
+            text="Send"
         )
         submit_btn.pack(side="right", padx=0, pady=1)
-
-        if not self.run_in_idle:
-            panel.mainloop()
 
     def handle_user_input(self, event=None):
         """TODO."""
@@ -135,9 +117,3 @@ class Tiamat:
 
         self.msgfeed.config(state="disabled")
         self.msgfeed.see(tk.END)
-
-if __name__ == "__main__":
-    window = tk.Tk()
-    window.title("Tiamat")
-
-    Tiamat(window, run_in_idle=False)
