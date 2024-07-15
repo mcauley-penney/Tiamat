@@ -4,6 +4,7 @@ import asyncio
 import threading
 import tkinter as tk
 from tkinter import ttk
+from idlelib.config import idleConf
 import aiohttp
 
 
@@ -27,6 +28,26 @@ class Tiamat:
 
         self.async_loop = asyncio.new_event_loop()
 
+        self.main_font = (
+            idleConf.GetOption("main", "EditorWindow", "font"),
+            idleConf.GetOption("main", "EditorWindow", "font-size"),
+        )
+        self.theme = idleConf.GetOption("main", "Theme", "name2") or idleConf.GetOption(
+            "main", "Theme", "name"
+        )
+        self.normal_background = idleConf.GetOption(
+            "highlight", self.theme, "normal-background"
+        )
+        self.normal_foreground = idleConf.GetOption(
+            "highlight", self.theme, "normal-foreground"
+        )
+        self.secondary_bg = idleConf.GetOption(
+            "highlight", self.theme, "hilite-background"
+        )
+        self.secondary_fg = idleConf.GetOption(
+            "highlight", self.theme, "hilite-foreground"
+        )
+
         thread = threading.Thread(target=self.start_loop, args=(self.async_loop,))
         thread.start()
 
@@ -39,22 +60,21 @@ class Tiamat:
 
     def init_widgets(self):
         """TODO."""
-
-        panel = ttk.Frame(self.editwin.top, style="TFrame")
+        panel = tk.Frame(self.editwin.top)
         panel.pack(side="left", fill="y", expand=False, padx=(0, 0), pady=(0, 0))
 
-        self.top_bar = ttk.Frame(panel, style="TFrame")
-        self.top_bar.pack(side="top", fill="x", padx=5, pady=5)
+        self.top_bar = tk.Frame(panel, padx=5, pady=5)
+        self.top_bar.pack(side="top", fill="x")
 
         self.title = ttk.Label(
-            self.top_bar, style="TLabel", text="Tiamat", justify=tk.LEFT, font="Arial"
+            self.top_bar, text="Tiamat", justify=tk.LEFT, font=self.main_font
         )
         self.title.pack(side="left", fill="x")
 
-        self.feed_box = ttk.Frame(panel, style="TFrame")
-        self.feed_box.pack(side="bottom", fill="x", padx=5, pady=5)
+        self.feed_box = tk.Frame(panel)
+        self.feed_box.pack(side="bottom", fill="x")
 
-        self.msg_canvas = tk.Canvas(panel)
+        self.msg_canvas = tk.Canvas(panel, background=self.normal_background)
         self.msg_canvas.pack(side="left", fill="both", expand=True)
 
         self.msg_scrollbar = ttk.Scrollbar(
@@ -64,8 +84,10 @@ class Tiamat:
 
         self.msg_canvas.configure(yscrollcommand=self.msg_scrollbar.set)
 
-        self.messages_frame = ttk.Frame(self.msg_canvas)
-        self.msg_canvas.create_window((0, 0), window=self.messages_frame, anchor="nw")
+        self.messages_frame = tk.Frame(
+            self.msg_canvas, background=self.normal_background, padx=5, pady=5
+        )
+        self.msg_canvas.create_window((0, 0), window=self.messages_frame)
 
         self.msg_canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
 
@@ -78,19 +100,24 @@ class Tiamat:
             borderwidth=0,
             highlightthickness=0,
             wrap="word",
-            font="Arial 12",
+            font=self.main_font,
+            background=self.normal_background,
+            foreground=self.normal_foreground,
         )
-        self.input_box.pack(side="left", fill="both", expand=True, padx=0, pady=1)
+        self.input_box.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         self.input_box.bind("<Return>", self.handle_user_input)
 
-        submit_btn = ttk.Button(
+        submit_btn = tk.Button(
             self.feed_box,
             command=self.handle_user_input,
             text="Send",
-            padding=(10, 20),
-            style="SendButton.TButton",
+            padx=5,
+            pady=5,
+            background=self.normal_background,
+            foreground=self.normal_foreground,
+            font=self.main_font,
         )
-        submit_btn.pack(side="right", padx=0, pady=1)
+        submit_btn.pack(side="right", padx=2, pady=0)
 
     def _on_mouse_wheel(self, event):
         self.msg_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -141,21 +168,27 @@ class Tiamat:
         if speaker == "You":
             msg_background = "#5c8bd6"
             msg_foreground = "#ffffff"
+            side = "e"
+            msg_col = 1
         else:
-            msg_background = "#afb9c9"
-            msg_foreground = "#000000"
+            msg_background = self.secondary_bg
+            msg_foreground = self.secondary_fg
+            side = "w"
+            msg_col = 0
 
         label = ttk.Label(
             self.messages_frame,
             text=msg,
-            width=-50,
+            width=-40,
             wraplength=400,
             padding=(5, 5),
-            font="Arial 12",
+            font=self.main_font,
             background=msg_background,
             foreground=msg_foreground,
+            borderwidth=1,
+            relief="solid",
         )
-        label.pack(side="top", fill="none", pady=5)
+        label.grid(sticky=side, padx=5, pady=5)
 
         self.messages_frame.update_idletasks()
         self.msg_canvas.config(scrollregion=self.msg_canvas.bbox("all"))
