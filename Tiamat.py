@@ -39,9 +39,6 @@ class Tiamat:
     def init_widgets(self):
         """TODO."""
 
-        # style = ttk.Style()
-        # style.configure("TFrame", background="#fff")
-
         panel = ttk.Frame(self.editwin.top, style="TFrame")
         panel.pack(side="left", fill="y", expand=False, padx=(0, 0), pady=(0, 0))
 
@@ -69,7 +66,15 @@ class Tiamat:
         self.msg_canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
 
         self.input_box = tk.Text(
-            self.feed_box, height=2, width=50, borderwidth=0, highlightthickness=0, wrap="word", font="Arial"
+            self.feed_box, 
+            height=4, 
+            width=50,
+            padx=5,
+            pady=5, 
+            borderwidth=0, 
+            highlightthickness=0, 
+            wrap="word", 
+            font="Arial 12"
         )
         self.input_box.pack(side="left", fill="both", expand=True, padx=0, pady=1)
         self.input_box.bind("<Return>", self.handle_user_input)
@@ -77,7 +82,9 @@ class Tiamat:
         submit_btn = ttk.Button(
             self.feed_box,
             command=self.handle_user_input,
-            text="Send"
+            text="Send",
+            padding=(10, 20),
+            style="SendButton.TButton"
         )
         submit_btn.pack(side="right", padx=0, pady=1)
 
@@ -99,7 +106,7 @@ class Tiamat:
 
     async def query_assistant(self, msg):
         """TODO."""
-        payload = {"message": msg, "session_id": "IDLE"}
+        payload = {"message": msg, "session_id": "test"}
         headers = {"Content-Type": "application/json"}
 
         post_task = asyncio.create_task(async_post(ENDPOINT, payload, headers))
@@ -127,7 +134,14 @@ class Tiamat:
         msg = f"{speaker}\n{msg}\n\n"
         print(msg)
 
-        label = ttk.Label(self.messages_frame, text=msg, width=50, wraplength=200, background="lightgray", padding=5, font="Arial")
+        if speaker == "You":
+            msg_background = "#5c8bd6"
+            msg_foreground = "#ffffff"
+        else:
+            msg_background = "#afb9c9"
+            msg_foreground = "#000000"
+
+        label = ttk.Label(self.messages_frame, text=msg, width=-50, wraplength=400, padding=(5, 5), font="Arial 12", background=msg_background, foreground=msg_foreground)
         label.pack(side="top", fill="none", pady=5)
 
         self.messages_frame.update_idletasks()
