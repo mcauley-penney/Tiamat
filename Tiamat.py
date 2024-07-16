@@ -85,11 +85,14 @@ class Tiamat:
         self.msg_canvas.configure(yscrollcommand=self.msg_scrollbar.set)
 
         self.messages_frame = tk.Frame(
-            self.msg_canvas, background=self.normal_background, padx=5, pady=5
+            self.msg_canvas, background=self.normal_background, padx=10, pady=10
         )
-        self.msg_canvas.create_window((0, 0), window=self.messages_frame)
+        self.msg_window_id = self.msg_canvas.create_window(
+            (0, 0), window=self.messages_frame
+        )
 
         self.msg_canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
+        self.msg_canvas.bind("<Configure>", self._on_canvas_resize)
 
         self.input_box = tk.Text(
             self.feed_box,
@@ -121,6 +124,9 @@ class Tiamat:
 
     def _on_mouse_wheel(self, event):
         self.msg_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_canvas_resize(self, event):
+        self.msg_canvas.itemconfig(self.msg_window_id, width=event.width - 5)
 
     def handle_user_input(self, event=None):
         """TODO."""
@@ -165,22 +171,22 @@ class Tiamat:
         msg = f"{speaker}\n{msg}\n\n"
         print(msg)
 
+        outer_frame = tk.Frame(self.messages_frame, background=self.normal_background)
+        outer_frame.pack(fill="x", padx=5, pady=5, expand=False)
+
         if speaker == "You":
             msg_background = "#5c8bd6"
             msg_foreground = "#ffffff"
             side = "e"
-            msg_col = 1
         else:
             msg_background = self.secondary_bg
             msg_foreground = self.secondary_fg
             side = "w"
-            msg_col = 0
 
         label = ttk.Label(
-            self.messages_frame,
+            outer_frame,
             text=msg,
             width=-40,
-            wraplength=400,
             padding=(5, 5),
             font=self.main_font,
             background=msg_background,
@@ -188,8 +194,11 @@ class Tiamat:
             borderwidth=1,
             relief="solid",
         )
-        label.grid(sticky=side, padx=5, pady=5)
+        label.pack(fill="none", anchor=side)
 
         self.messages_frame.update_idletasks()
         self.msg_canvas.config(scrollregion=self.msg_canvas.bbox("all"))
         self.msg_canvas.yview_moveto(1)
+
+        # Once the message has been drawn, adjust the wrap length so that the text wraps
+        label.configure(wraplength=label.winfo_width() - 10)
