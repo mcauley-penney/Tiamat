@@ -3,7 +3,7 @@
 import asyncio
 import threading
 import tkinter as tk
-from tkinter import ttk
+import tkinter.ttk as ttk
 from idlelib.config import idleConf
 import aiohttp
 
