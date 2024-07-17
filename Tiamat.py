@@ -85,10 +85,23 @@ class Tiamat:
         self.msg_canvas.configure(yscrollcommand=self.msg_scrollbar.set)
 
         self.messages_frame = tk.Frame(
-            self.msg_canvas, background=self.normal_background, padx=10, pady=10
+            self.msg_canvas,
+            background=self.normal_background,
+            padx=10,
+            pady=10,
+            width=self.msg_canvas.winfo_width(),
         )
         self.msg_window_id = self.msg_canvas.create_window(
             (0, 0), window=self.messages_frame
+        )
+
+        self.thinking_text = ttk.Label(
+            self.messages_frame,
+            background=self.normal_background,
+            foreground=self.normal_foreground,
+            font=(self.main_font[0], self.main_font[1], "italic"),
+            text="Assistant is typing...",
+            justify="left"
         )
 
         self.msg_canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
@@ -128,10 +141,17 @@ class Tiamat:
     def _on_canvas_resize(self, event):
         self.msg_canvas.itemconfig(self.msg_window_id, width=event.width - 5)
 
+    def show_thinking_text(self):
+        self.thinking_text.pack(side="bottom", padx=5, pady=5, anchor="w")
+
+    def hide_thinking_text(self):
+        self.thinking_text.pack_forget()
+
     def handle_user_input(self, event=None):
         """TODO."""
         user_input = self.input_box.get("1.0", tk.END).strip()
         self.input_box.delete("1.0", tk.END)
+        self.show_thinking_text()
 
         if user_input:
             coroutine = self.query_assistant(user_input)
@@ -159,6 +179,7 @@ class Tiamat:
     def handle_result(self, future):
         """TODO."""
         response = future.result()
+        self.hide_thinking_text()
 
         if response is None:
             print("ERROR: no response!")
