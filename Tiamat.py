@@ -85,14 +85,10 @@ class Tiamat:
         self.msg_canvas.configure(yscrollcommand=self.msg_scrollbar.set)
 
         self.messages_frame = tk.Frame(
-            self.msg_canvas,
-            background=self.normal_background,
-            padx=10,
-            pady=10,
-            width=self.msg_canvas.winfo_width(),
+            self.msg_canvas, background=self.normal_background, padx=10, pady=10
         )
         self.msg_window_id = self.msg_canvas.create_window(
-            (0, 0), window=self.messages_frame
+            (0, 0), window=self.messages_frame, anchor="nw"
         )
 
         self.thinking_text = ttk.Label(
@@ -101,7 +97,7 @@ class Tiamat:
             foreground=self.normal_foreground,
             font=(self.main_font[0], self.main_font[1], "italic"),
             text="Assistant is typing...",
-            justify="left"
+            justify="left",
         )
 
         self.msg_canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
@@ -163,7 +159,7 @@ class Tiamat:
 
     async def query_assistant(self, msg):
         """TODO."""
-        payload = {"message": msg, "session_id": "test"}
+        payload = {"message": msg, "session_id": "test2"}
         headers = {"Content-Type": "application/json"}
 
         post_task = asyncio.create_task(async_post(ENDPOINT, payload, headers))
@@ -218,8 +214,8 @@ class Tiamat:
         label.pack(fill="none", anchor=side)
 
         self.messages_frame.update_idletasks()
+        label.configure(wraplength=label.winfo_width() - 10)
+
+        self.messages_frame.update_idletasks()
         self.msg_canvas.config(scrollregion=self.msg_canvas.bbox("all"))
         self.msg_canvas.yview_moveto(1)
-
-        # Once the message has been drawn, adjust the wrap length so that the text wraps
-        label.configure(wraplength=label.winfo_width() - 10)
