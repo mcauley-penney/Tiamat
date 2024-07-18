@@ -25,6 +25,7 @@ class Tiamat:
     def __init__(self, editwin):
         self.editwin = editwin
         self.history = []
+        self.can_send = True
 
         self.async_loop = asyncio.new_event_loop()
 
@@ -119,7 +120,7 @@ class Tiamat:
         self.input_box.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         self.input_box.bind("<Return>", self.handle_user_input)
 
-        submit_btn = tk.Button(
+        self.submit_btn = tk.Button(
             self.feed_box,
             command=self.handle_user_input,
             text="Send",
@@ -128,8 +129,9 @@ class Tiamat:
             background=self.normal_background,
             foreground=self.normal_foreground,
             font=self.main_font,
+            state="normal",
         )
-        submit_btn.pack(side="right", padx=2, pady=0)
+        self.submit_btn.pack(side="right", padx=2, pady=0)
 
     def _on_mouse_wheel(self, event):
         self.msg_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -137,19 +139,29 @@ class Tiamat:
     def _on_canvas_resize(self, event):
         self.msg_canvas.itemconfig(self.msg_window_id, width=event.width - 5)
 
-    def show_thinking_text(self):
-        self.thinking_text.pack(side="bottom", padx=5, pady=5, anchor="w")
+    def set_thinking_text(self, setting):
+        if setting:
+            self.thinking_text.pack(side="bottom", padx=5, pady=5, anchor="w")
+        else:
+            self.thinking_text.pack_forget()
 
-    def hide_thinking_text(self):
-        self.thinking_text.pack_forget()
+    def set_can_send(self, setting):
+        if setting:
+            self.submit_btn.configure(state="normal")
+        else:
+            self.submit_btn.configure(state="disabled")
+
+        self.can_send = setting
 
     def handle_user_input(self, event=None):
         """TODO."""
         user_input = self.input_box.get("1.0", tk.END).strip()
-        self.input_box.delete("1.0", tk.END)
-        self.show_thinking_text()
 
-        if user_input:
+        if self.can_send and user_input and user_input != "":
+            self.input_box.delete("1.0", tk.END)
+            self.set_thinking_text(True)
+            self.set_can_send(False)
+
             coroutine = self.query_assistant(user_input)
             future = asyncio.run_coroutine_threadsafe(coroutine, self.async_loop)
             future.add_done_callback(self.handle_result)
@@ -175,13 +187,15 @@ class Tiamat:
     def handle_result(self, future):
         """TODO."""
         response = future.result()
-        self.hide_thinking_text()
+        self.set_thinking_text(False)
 
         if response is None:
             print("ERROR: no response!")
         else:
             self.history.append(("Assistant", response))
             self.print_msg("Assistant", response)
+
+        self.set_can_send(True)
 
     def print_msg(self, speaker, msg):
         """TODO."""
