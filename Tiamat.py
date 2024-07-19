@@ -4,9 +4,9 @@ import asyncio
 import threading
 import tkinter as tk
 import tkinter.ttk as ttk
+import tkinter.filedialog as fd
 from idlelib.config import idleConf
 import aiohttp
-
 
 ENDPOINT = "http://127.0.0.1:8000/v1/assistant/prompt"
 
@@ -71,6 +71,17 @@ class Tiamat:
             self.top_bar, text="Tiamat", justify=tk.LEFT, font=self.main_font
         )
         self.title.pack(side="left", fill="x")
+
+        self.download_button = tk.Button(
+            self.top_bar,
+            command=self.prompt_for_file,
+            text="Export",
+            width=10,
+            padx=2,
+            pady=2,
+            font=self.main_font,
+        )
+        self.download_button.pack(side="right", fill="none")
 
         self.feed_box = tk.Frame(panel)
         self.feed_box.pack(side="bottom", fill="x")
@@ -233,3 +244,19 @@ class Tiamat:
         self.messages_frame.update_idletasks()
         self.msg_canvas.config(scrollregion=self.msg_canvas.bbox("all"))
         self.msg_canvas.yview_moveto(1)
+
+    def prompt_for_file(self):
+        # Prompts user for file to save to
+        file_path = fd.asksaveasfilename(
+            title="Save File",
+            defaultextension=".txt",
+            filetypes=(("Text files", "*.txt"), ("All files", "*.*")),
+        )
+
+        if file_path:
+            self.export_conversation(file_path)
+
+    def export_conversation(self, filename):
+        with open(filename, "w") as file:
+            for message in self.history:
+                file.write(f"{message[0]}: {message[1]}\n")
