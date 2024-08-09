@@ -3,8 +3,10 @@
 import asyncio
 import threading
 import tkinter as tk
+import tkinter.ttk as ttk
+import tkinter.filedialog as fd
+from idlelib.config import idleConf
 import aiohttp
-
 
 ENDPOINT = "http://127.0.0.1:8000/v1/assistant/prompt"
 
@@ -23,8 +25,29 @@ class Tiamat:
     def __init__(self, editwin):
         self.editwin = editwin
         self.history = []
+        self.can_send = True
 
         self.async_loop = asyncio.new_event_loop()
+
+        self.main_font = (
+            idleConf.GetOption("main", "EditorWindow", "font"),
+            idleConf.GetOption("main", "EditorWindow", "font-size"),
+        )
+        self.theme = idleConf.GetOption("main", "Theme", "name2") or idleConf.GetOption(
+            "main", "Theme", "name"
+        )
+        self.normal_background = idleConf.GetOption(
+            "highlight", self.theme, "normal-background"
+        )
+        self.normal_foreground = idleConf.GetOption(
+            "highlight", self.theme, "normal-foreground"
+        )
+        self.secondary_bg = idleConf.GetOption(
+            "highlight", self.theme, "hilite-background"
+        )
+        self.secondary_fg = idleConf.GetOption(
+            "highlight", self.theme, "hilite-foreground"
+        )
 
         thread = threading.Thread(target=self.start_loop, args=(self.async_loop,))
         thread.start()
@@ -38,50 +61,118 @@ class Tiamat:
 
     def init_widgets(self):
         """TODO."""
-        panel = tk.Frame(self.editwin.top, bg="white")
+        panel = tk.Frame(self.editwin.top)
         panel.pack(side="left", fill="y", expand=False, padx=(0, 0), pady=(0, 0))
 
-        self.feed_box = tk.Frame(panel, borderwidth=2, relief="sunken")
-        self.feed_box.pack(side="bottom", fill="x", padx=5, pady=5)
+        self.top_bar = tk.Frame(panel, padx=5, pady=5)
+        self.top_bar.pack(side="top", fill="x")
 
-        self.msgfeed = tk.Text(
-            panel,
-            state="disabled",
-            height=20,
-            width=50,
-            borderwidth=2,
-            relief="sunken",
+        self.title = ttk.Label(
+            self.top_bar, text="Tiamat", justify=tk.LEFT, font=self.main_font
         )
-        self.msgfeed.pack(side="top", fill="both", expand=True, padx=5, pady=5)
+        self.title.pack(side="left", fill="x")
+
+        self.download_button = tk.Button(
+            self.top_bar,
+            command=self.prompt_for_file,
+            text="Export",
+            width=10,
+            padx=2,
+            pady=2,
+            font=self.main_font,
+        )
+        self.download_button.pack(side="right", fill="none")
+
+        self.feed_box = tk.Frame(panel)
+        self.feed_box.pack(side="bottom", fill="x")
+
+        self.msg_canvas = tk.Canvas(panel, background=self.normal_background)
+        self.msg_canvas.pack(side="left", fill="both", expand=True)
+
+        self.msg_scrollbar = ttk.Scrollbar(
+            panel, orient="vertical", command=self.msg_canvas.yview
+        )
+        self.msg_scrollbar.pack(side="right", fill="y")
+
+        self.msg_canvas.configure(yscrollcommand=self.msg_scrollbar.set)
+
+        self.messages_frame = tk.Frame(
+            self.msg_canvas, background=self.normal_background, padx=10, pady=10
+        )
+        self.msg_window_id = self.msg_canvas.create_window(
+            (0, 0), window=self.messages_frame, anchor="nw"
+        )
+
+        self.thinking_text = ttk.Label(
+            self.messages_frame,
+            background=self.normal_background,
+            foreground=self.normal_foreground,
+            font=(self.main_font[0], self.main_font[1], "italic"),
+            text="Assistant is typing...",
+            justify="left",
+        )
+
+        self.msg_canvas.bind_all("<MouseWheel>", self._on_mouse_wheel)
+        self.msg_canvas.bind("<Configure>", self._on_canvas_resize)
 
         self.input_box = tk.Text(
-            self.feed_box, height=2, width=50, borderwidth=0, highlightthickness=0
+            self.feed_box,
+            height=4,
+            width=50,
+            padx=5,
+            pady=5,
+            borderwidth=0,
+            highlightthickness=0,
+            wrap="word",
+            font=self.main_font,
+            background=self.normal_background,
+            foreground=self.normal_foreground,
         )
-        self.input_box.pack(side="left", fill="both", expand=True, padx=0, pady=1)
+        self.input_box.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         self.input_box.bind("<Return>", self.handle_user_input)
 
-        submit_btn = tk.Button(
+        self.submit_btn = tk.Button(
             self.feed_box,
             command=self.handle_user_input,
-            text="",
-            background="white",
-            height=2,
-            width=1,
-            foreground="gray",
-            highlightcolor="white",
-            highlightbackground="white",
-            cursor="hand2",
-            relief=tk.FLAT,
-            font=("Arial", 30, "bold"),
+            text="Send",
+            padx=5,
+            pady=5,
+            background=self.normal_background,
+            foreground=self.normal_foreground,
+            font=self.main_font,
+            state="normal",
         )
-        submit_btn.pack(side="right", padx=0, pady=1)
+        self.submit_btn.pack(side="right", padx=2, pady=0)
+
+    def _on_mouse_wheel(self, event):
+        self.msg_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+    def _on_canvas_resize(self, event):
+        self.msg_canvas.itemconfig(self.msg_window_id, width=event.width - 5)
+
+    def set_thinking_text(self, setting):
+        if setting:
+            self.thinking_text.pack(side="bottom", padx=5, pady=5, anchor="w")
+        else:
+            self.thinking_text.pack_forget()
+
+    def set_can_send(self, setting):
+        if setting:
+            self.submit_btn.configure(state="normal")
+        else:
+            self.submit_btn.configure(state="disabled")
+
+        self.can_send = setting
 
     def handle_user_input(self, event=None):
         """TODO."""
         user_input = self.input_box.get("1.0", tk.END).strip()
-        self.input_box.delete("1.0", tk.END)
 
-        if user_input:
+        if self.can_send and user_input and user_input != "":
+            self.input_box.delete("1.0", tk.END)
+            self.set_thinking_text(True)
+            self.set_can_send(False)
+
             coroutine = self.query_assistant(user_input)
             future = asyncio.run_coroutine_threadsafe(coroutine, self.async_loop)
             future.add_done_callback(self.handle_result)
@@ -91,7 +182,7 @@ class Tiamat:
 
     async def query_assistant(self, msg):
         """TODO."""
-        payload = {"message": msg, "session_id": "IDLE"}
+        payload = {"message": msg, "session_id": "test2"}
         headers = {"Content-Type": "application/json"}
 
         post_task = asyncio.create_task(async_post(ENDPOINT, payload, headers))
@@ -107,6 +198,7 @@ class Tiamat:
     def handle_result(self, future):
         """TODO."""
         response = future.result()
+        self.set_thinking_text(False)
 
         if response is None:
             print("ERROR: no response!")
@@ -114,13 +206,57 @@ class Tiamat:
             self.history.append(("Assistant", response))
             self.print_msg("Assistant", response)
 
+        self.set_can_send(True)
+
     def print_msg(self, speaker, msg):
         """TODO."""
         msg = f"{speaker}\n{msg}\n\n"
         print(msg)
 
-        self.msgfeed.config(state="normal")
-        self.msgfeed.insert(tk.END, msg)
+        outer_frame = tk.Frame(self.messages_frame, background=self.normal_background)
+        outer_frame.pack(fill="x", padx=5, pady=5, expand=False)
 
-        self.msgfeed.config(state="disabled")
-        self.msgfeed.see(tk.END)
+        if speaker == "You":
+            msg_background = "#5c8bd6"
+            msg_foreground = "#ffffff"
+            side = "e"
+        else:
+            msg_background = self.secondary_bg
+            msg_foreground = self.secondary_fg
+            side = "w"
+
+        label = ttk.Label(
+            outer_frame,
+            text=msg,
+            width=-40,
+            padding=(5, 5),
+            font=self.main_font,
+            background=msg_background,
+            foreground=msg_foreground,
+            borderwidth=1,
+            relief="solid",
+        )
+        label.pack(fill="none", anchor=side)
+
+        self.messages_frame.update_idletasks()
+        label.configure(wraplength=label.winfo_width() - 10)
+
+        self.messages_frame.update_idletasks()
+        self.msg_canvas.config(scrollregion=self.msg_canvas.bbox("all"))
+        self.msg_canvas.yview_moveto(1)
+
+    def prompt_for_file(self):
+        # Prompts user for file to save to
+        file_path = fd.asksaveasfilename(
+            title="Save File",
+            defaultextension=".txt",
+            filetypes=(("Text files", "*.txt"), ("All files", "*.*")),
+        )
+
+        if file_path:
+            self.export_conversation(file_path)
+
+    def export_conversation(self, filename):
+        with open(filename, "w") as file:
+            for message in self.history:
+                file.write(f"{message[0]}: {message[1]}\n")
